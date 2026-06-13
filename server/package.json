@@ -1,7 +1,9 @@
 {
   "name": "messaging-platform-server",
   "version": "1.0.0",
+  "private": true,
   "description": "Real-Time Collaborative Messaging Platform - Backend",
+  "license": "UNLICENSED",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -367,4 +367,4 @@ Indexes: (user, channel) UNIQUE, (channel, role)
 
 ## License
 
-MIT
+Proprietary — owned by Namratha R. All rights reserved.
