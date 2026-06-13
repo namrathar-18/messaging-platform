@@ -18,6 +18,12 @@ router.get('/:channelId', requireChannelMembership, async (req, res, next) => {
     const filter = {
       channel: req.params.channelId,
       deleted: false,
+      // Hide "delete for me" messages for this user
+      $or: [
+        { deletedFor: { $exists: false } },
+        { deletedFor: { $size: 0 } },
+        { deletedFor: { $not: { $elemMatch: { user: req.user._id } } } },
+      ],
     };
 
     if (before) {
@@ -97,6 +103,98 @@ router.patch('/:channelId/:messageId/read', requireChannelMembership, async (req
     );
 
     res.json({ message });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/messages/:channelId/:messageId/reply
+// Body: { content, attachments }
+router.post('/:channelId/:messageId/reply', requireChannelMembership, async (req, res, next) => {
+  try {
+    const { content = '', attachments = [] } = req.body;
+
+    if (!content.trim() && attachments.length === 0) {
+      return res.status(400).json({ error: 'Reply must have content or attachments.' });
+    }
+
+    const message = await Message.create({
+      channel: req.params.channelId,
+      sender: req.user._id,
+      content: content.trim(),
+      attachments,
+      replyTo: req.params.messageId,
+    });
+
+    await Channel.findByIdAndUpdate(req.params.channelId, {
+      lastMessage: message._id,
+      lastActivity: new Date(),
+    });
+
+    const populated = await Message.findById(message._id)
+      .populate('sender', 'username avatar status isBot')
+      .populate({
+        path: 'replyTo',
+        populate: { path: 'sender', select: 'username avatar status isBot' },
+      })
+      .lean();
+
+    res.status(201).json({ message: populated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/messages/:channelId/:messageId/edit
+// Body: { content }
+router.patch('/:channelId/:messageId/edit', requireChannelMembership, async (req, res, next) => {
+  try {
+    const { content = '' } = req.body;
+
+    if (!content.trim()) {
+      return res.status(400).json({ error: 'Edited content cannot be empty.' });
+    }
+
+    const message = await Message.findOneAndUpdate(
+      {
+        _id: req.params.messageId,
+        channel: req.params.channelId,
+        sender: req.user._id,
+      },
+      {
+        content: content.trim(),
+        editedAt: new Date(),
+      },
+      { new: true }
+    )
+      .populate('sender', 'username avatar status isBot')
+      .populate({
+        path: 'replyTo',
+        populate: { path: 'sender', select: 'username avatar status isBot' },
+      });
+
+    if (!message) return res.status(404).json({ error: 'Message not found.' });
+
+    res.json({ message });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/messages/:channelId/:messageId/delete-for-me
+router.delete('/:channelId/:messageId/delete-for-me', requireChannelMembership, async (req, res, next) => {
+  try {
+    await Message.updateOne(
+      {
+        _id: req.params.messageId,
+        channel: req.params.channelId,
+      },
+      {
+        $addToSet: { deletedFor: { user: req.user._id, deletedAt: new Date() } },
+      }
+    );
+
+    res.json({ ok: true });
   } catch (err) {
     next(err);
   }

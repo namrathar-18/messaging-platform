@@ -22,9 +22,21 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
+      required: function () {
+        return !this.googleId;
+      },
       minlength: [6, 'Password must be at least 6 characters'],
       select: false,
+    },
+    googleId: {
+      type: String,
+      default: null,
+      index: true,
+    },
+    authProvider: {
+      type: String,
+      enum: ['local', 'google'],
+      default: 'local',
     },
     isBot: {
       type: Boolean,
@@ -43,6 +55,12 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    blockedUsers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
   },
   {
     timestamps: true,
@@ -70,8 +88,7 @@ userSchema.methods.toJSON = function () {
 };
 
 // Indexes
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
 userSchema.index({ status: 1 });
+userSchema.index({ blockedUsers: 1 });
 
 module.exports = mongoose.model('User', userSchema);

@@ -5,7 +5,7 @@
  */
 const User = require('../models/User');
 
-const BOT_USERNAME = 'ai-assistant';
+const BOT_USERNAME = 'ai_assistant';
 const BOT_EMAIL = 'ai-assistant@bot.internal';
 const BOT_PASSWORD = process.env.BOT_PASSWORD || 'B0t$ecure!Internal#2024';
 

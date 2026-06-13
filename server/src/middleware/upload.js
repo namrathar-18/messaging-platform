@@ -1,12 +1,14 @@
 const multer = require('multer');
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
+  'image/jpg',
   'image/png',
   'image/gif',
   'image/webp',
+  'image/avif',
   'image/svg+xml',
   'application/pdf',
   'application/msword',
@@ -16,8 +18,14 @@ const ALLOWED_MIME_TYPES = [
   'text/plain',
   'application/zip',
   'video/mp4',
+  'video/webm',
+  'video/quicktime',
   'audio/mpeg',
   'audio/wav',
+  'audio/webm',
+  'audio/ogg',
+  'audio/mp4',
+  'audio/x-m4a',
 ];
 
 const storage = multer.memoryStorage();
@@ -40,7 +48,7 @@ const upload = multer({
 const handleMulterError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ error: 'File size exceeds the 10 MB limit.' });
+      return res.status(400).json({ error: 'File size exceeds the 25 MB limit.' });
     }
     return res.status(400).json({ error: err.message });
   }

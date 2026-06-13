@@ -1,370 +1,571 @@
-# Real-Time Collaborative Messaging Platform
+# PingLink AI
 
 Owner: Namratha R
 
-A full-stack MERN messaging platform supporting 100+ concurrent users, real-time communication via Socket.io, role-based access control, and AWS S3 file uploads.
+PingLink AI is an AI-powered real-time messaging and team collaboration web application built with the MERN stack. It supports direct messages, group channels, file sharing, voice notes, stories/status updates, AI assistance, role-based channel access, and a responsive chat interface.
 
----
+## Table of Contents
+
+- [Project Overview](#project-overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [How The Website Works](#how-the-website-works)
+- [Prerequisites](#prerequisites)
+- [Environment Setup](#environment-setup)
+- [How To Run Locally](#how-to-run-locally)
+- [Testing The App Flow](#testing-the-app-flow)
+- [API Overview](#api-overview)
+- [Socket.io Events](#socketio-events)
+- [Troubleshooting](#troubleshooting)
+- [Live Hosting Guide](#live-hosting-guide)
+- [Future Enhancements](#future-enhancements)
+
+## Project Overview
+
+PingLink AI is designed as a messaging-focused collaboration platform, similar in direction to Slack or Microsoft Teams, but with AI features included for productivity.
+
+The app has three main parts:
+
+- Frontend: React + Vite application used by users in the browser
+- Backend: Express API and Socket.io server for auth, chat, channels, uploads, AI, and real-time events
+- Database: MongoDB for users, channels, memberships, messages, stories, and metadata
+
+## Features
+
+- User registration and login using JWT authentication
+- Protected chat dashboard after login
+- Real-time 1:1 direct messaging
+- Group channels for team collaboration
+- Create, update, delete, join, and leave channel workflows
+- Owner, admin, and member roles for channel access control
+- Member management inside group channels
+- Live online/offline presence indicators
+- Typing indicators
+- Read receipts
+- Message pagination for chat history
+- File and image sharing through server uploads
+- Upload previews in the message composer
+- Editable user profile
+- Profile photo support
+- User blocking and unblocking for direct messages
+- Voice note recording and playback
+- Audio/video call interface
+- Stories/status tray
+- AI assistant mentions using `@ai-assistant`
+- AI smart reply suggestions
+- AI conversation summaries
+- AI semantic conversation search
+- Responsive desktop and mobile layout
+- Dark and light theme support
+- Modern glass-style UI
+- Production environment examples and deployment notes
 
 ## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
+| --- | --- |
 | Frontend | React 18, Vite, Tailwind CSS |
 | Backend | Node.js, Express.js |
-| Database | MongoDB (Mongoose) |
+| Database | MongoDB, Mongoose |
 | Real-time | Socket.io |
-| Auth | JWT (JSON Web Tokens) |
-| File Storage | AWS S3 (presigned URLs) |
-
----
-
-## Features
-
-- **Real-time messaging** — Sub-150ms delivery via Socket.io (no third-party SDK)
-- **1:1 Direct Messages** — Private conversations between users
-- **Group Channels** — Multi-user rooms with unlimited members
-- **Typing Indicators** — Live "User is typing…" with auto-dismiss
-- **Read Receipts** — Per-message read status with checkmark UI
-- **Online Presence** — Real-time online/offline status badges
-- **JWT Authentication** — Secure login/register with HttpOnly cookies
-- **Role-Based Access Control** — Owner / Admin / Member roles across 12+ REST endpoints
-- **File Uploads** — Images & files up to 10 MB via AWS S3 presigned URLs
-- **Infinite Scroll Pagination** — 50 messages per page, cursor-based
-- **Optimized MongoDB Schema** — Compound indexes for <30ms message queries
-
----
+| Authentication | JWT |
+| AI | Gemini gateway integration |
+| Uploads | Multer + local server uploads |
 
 ## Project Structure
 
-```
+```text
 messaging-platform/
-├── server/                  # Node.js / Express backend
-│   ├── server.js            # Entry point
-│   ├── src/
-│   │   ├── app.js           # Express app setup
-│   │   ├── models/          # Mongoose models
-│   │   │   ├── User.js
-│   │   │   ├── Channel.js
-│   │   │   ├── Message.js
-│   │   │   └── Membership.js
-│   │   ├── routes/          # REST API endpoints
-│   │   │   ├── auth.js      # POST /register, /login, /logout, GET /me
-│   │   │   ├── users.js     # GET /search, /:id, PATCH /me/status
-│   │   │   ├── channels.js  # Full CRUD + members management
-│   │   │   ├── messages.js  # Pagination + read receipts
-│   │   │   └── uploads.js   # S3 direct upload + presigned URLs
-│   │   ├── middleware/
-│   │   │   ├── auth.js      # JWT authentication
-│   │   │   ├── rbac.js      # Role-based access control
-│   │   │   └── upload.js    # Multer + file validation
-│   │   ├── socket/
-│   │   │   └── index.js     # Socket.io handlers
-│   │   └── utils/
-│   │       ├── db.js        # MongoDB connection
-│   │       ├── s3.js        # AWS S3 utilities
-│   │       └── jwt.js       # JWT helpers
-│   ├── .env.example
-│   └── package.json
-│
-└── client/                  # React + Vite frontend
-    ├── src/
-    │   ├── App.jsx           # Router + providers
-    │   ├── main.jsx
-    │   ├── index.css
-    │   ├── api/              # Axios API modules
-    │   │   ├── axios.js
-    │   │   ├── auth.js
-    │   │   ├── channels.js
-    │   │   ├── messages.js
-    │   │   └── uploads.js
-    │   ├── context/
-    │   │   ├── AuthContext.jsx
-    │   │   └── SocketContext.jsx
-    │   ├── hooks/
-    │   │   ├── useMessages.js
-    │   │   └── useChannels.js
-    │   ├── pages/
-    │   │   ├── LoginPage.jsx
-    │   │   ├── RegisterPage.jsx
-    │   │   └── ChatPage.jsx
-    │   └── components/
-    │       ├── auth/
-    │       │   └── ProtectedRoute.jsx
-    │       ├── layout/
-    │       │   └── Sidebar.jsx
-    │       └── chat/
-    │           ├── ChatArea.jsx
-    │           ├── MessageList.jsx
-    │           ├── MessageItem.jsx
-    │           ├── MessageInput.jsx
-    │           ├── TypingIndicator.jsx
-    │           ├── CreateChannelModal.jsx
-    │           ├── NewDirectMessageModal.jsx
-    │           ├── ChannelSettingsModal.jsx
-    │           ├── MembersModal.jsx
-    │           └── WelcomeScreen.jsx
-    ├── .env.example
-    ├── vite.config.js
-    ├── tailwind.config.js
-    └── package.json
+  client/
+    public/
+      favicon.svg
+      intellicollab-logo.svg
+    src/
+      api/
+        auth.js
+        axios.js
+        channels.js
+        messages.js
+        stories.js
+        uploads.js
+      components/
+        auth/
+        brand/
+        chat/
+        layout/
+        ui/
+      context/
+        AuthContext.jsx
+        SocketContext.jsx
+        ThemeContext.jsx
+      hooks/
+        useChannels.js
+        useMessages.js
+      pages/
+        ChatPage.jsx
+        LoginPage.jsx
+        RegisterPage.jsx
+      App.jsx
+      main.jsx
+      index.css
+    .env.example
+    package.json
+    vite.config.js
+
+  server/
+    src/
+      middleware/
+        auth.js
+        rbac.js
+        upload.js
+      models/
+        Channel.js
+        Membership.js
+        Message.js
+        Story.js
+        User.js
+      routes/
+        ai.js
+        auth.js
+        channels.js
+        messages.js
+        stories.js
+        uploads.js
+        users.js
+      socket/
+        index.js
+      utils/
+        db.js
+        jwt.js
+        origins.js
+        seedBot.js
+      app.js
+    uploads/
+      attachments/
+    .env.example
+    package.json
+    server.js
 ```
 
----
+## How The Website Works
+
+### 1. Authentication Flow
+
+1. A new user opens `/register`.
+2. The frontend sends username, email, and password to `POST /api/auth/register`.
+3. The backend validates the input, hashes the password with bcrypt, stores the user in MongoDB, and returns a JWT.
+4. The frontend saves the JWT in `localStorage`.
+5. For login, the frontend sends email and password to `POST /api/auth/login`.
+6. The backend compares the entered password with the hashed password and returns a JWT if it matches.
+7. Protected pages call `GET /api/auth/me` to restore the logged-in user.
+
+### 2. Chat Flow
+
+1. After login, the user enters the protected chat page.
+2. The frontend fetches the user's channels from `GET /api/channels`.
+3. The Socket.io client connects to the backend using the JWT.
+4. The server verifies the JWT and joins the user to their channel rooms.
+5. When a user sends a message, the frontend emits `send:message`.
+6. The backend stores the message in MongoDB and broadcasts `message:new` to everyone in that channel.
+7. Other users receive the message instantly without refreshing the page.
+
+### 3. Channel And Role Flow
+
+1. A user can create a group channel.
+2. The creator becomes the owner.
+3. Owners/admins can add members.
+4. Owners can update roles.
+5. Role checks protect sensitive operations such as editing channels, removing members, and deleting channels.
+
+### 4. AI Flow
+
+1. Smart replies use recent conversation context to suggest replies.
+2. Summaries collect recent messages from a channel and generate a short summary.
+3. Semantic search helps find relevant messages based on a natural-language query.
+4. The `@ai-assistant` mention triggers the bot flow through Socket.io and posts an AI-generated response into the channel.
+
+### 5. Upload Flow
+
+1. The user selects an image, file, profile photo, or voice note.
+2. The frontend uploads it through the backend upload route.
+3. The backend stores the file in `server/uploads/attachments`.
+4. Messages store attachment metadata and render the uploaded file from the API server.
 
 ## Prerequisites
 
-- **Node.js** >= 18.0.0
-- **MongoDB** >= 6.0 (local or [MongoDB Atlas](https://www.mongodb.com/atlas))
-- **AWS account** with an S3 bucket (for file uploads)
+Install these before running the project:
 
----
+- Node.js 18 or newer
+- npm
+- MongoDB, either:
+  - Local MongoDB running on your system, or
+  - MongoDB Atlas connection string
+- Git, if cloning from a repository
 
-## Setup Instructions
+## Environment Setup
 
-### 1. Clone / Extract the project
+### 1. Server Environment
 
-```bash
-unzip messaging-platform.zip
-cd messaging-platform
-```
-
----
-
-### 2. Server Setup
+Create a server environment file:
 
 ```bash
 cd server
-npm install
+copy .env.example .env
+```
+
+For Git Bash or macOS/Linux:
+
+```bash
+cd server
 cp .env.example .env
 ```
 
-Edit `.env` and fill in your values:
+Example `server/.env`:
 
 ```env
 PORT=5000
 NODE_ENV=development
 MONGO_URI=mongodb://localhost:27017/messaging_platform
-JWT_SECRET=your_very_long_random_secret_here
+JWT_SECRET=replace_with_a_long_random_secret
 JWT_EXPIRES_IN=7d
 CLIENT_URL=http://localhost:5173
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
-AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-AWS_S3_BUCKET_NAME=my-messaging-platform-bucket
-S3_PRESIGNED_URL_EXPIRY=3600
+CLIENT_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+INTEGRATIONS_API_KEY=your_ai_gateway_key_here
 ```
 
-**AWS S3 Bucket Configuration:**
-1. Create a new S3 bucket
-2. Enable public access (or keep private — presigned URLs work either way)
-3. Add the following CORS configuration to your bucket:
+If using MongoDB Atlas, replace `MONGO_URI` with your Atlas connection string:
 
-```json
-[
-  {
-    "AllowedHeaders": ["*"],
-    "AllowedMethods": ["GET", "PUT", "POST", "DELETE"],
-    "AllowedOrigins": ["http://localhost:5173"],
-    "ExposeHeaders": ["ETag"]
-  }
-]
+```env
+MONGO_URI=mongodb+srv://username:password@cluster-name.mongodb.net/messaging_platform
 ```
 
-4. Create an IAM user with `AmazonS3FullAccess` (or a scoped policy) and copy the credentials.
+Important for Atlas:
 
-**Start the server:**
+- Add your current IP address in Atlas Network Access.
+- Make sure the database username and password are correct.
+- If your password contains special characters, URL-encode them.
+
+### 2. Client Environment
+
+Create a client environment file:
 
 ```bash
-# Development (with auto-reload)
-npm run dev
-
-# Production
-npm start
+cd client
+copy .env.example .env
 ```
 
-Server runs at: `http://localhost:5000`
-
----
-
-### 3. Client Setup
+For Git Bash or macOS/Linux:
 
 ```bash
-cd ../client
-npm install
+cd client
 cp .env.example .env
 ```
 
-`.env` defaults (no changes needed for local dev):
+Example `client/.env`:
 
 ```env
 VITE_API_URL=http://localhost:5000/api
 VITE_SOCKET_URL=http://localhost:5000
 ```
 
-**Start the client:**
+## How To Run Locally
+
+Open two terminals.
+
+### Terminal 1: Start Backend
 
 ```bash
+cd server
+npm install
 npm run dev
 ```
 
-Client runs at: `http://localhost:5173`
+Expected backend output:
 
----
-
-## REST API Reference
-
-### Auth — `/api/auth`
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/register` | No | Register new user |
-| POST | `/login` | No | Login + receive JWT |
-| POST | `/logout` | Yes | Logout + clear cookie |
-| GET | `/me` | Yes | Get authenticated user |
-
-### Users — `/api/users`
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/search?q=` | Yes | Search users |
-| GET | `/:id` | Yes | Get user profile |
-| PATCH | `/me/status` | Yes | Update own status |
-
-### Channels — `/api/channels`
-
-| Method | Endpoint | Role | Description |
-|--------|----------|------|-------------|
-| GET | `/` | Member | List my channels |
-| POST | `/` | Any | Create group channel |
-| POST | `/direct` | Any | Get/create DM channel |
-| GET | `/:id` | Member | Get channel details |
-| PATCH | `/:id` | Admin+ | Update channel |
-| DELETE | `/:id` | Owner | Delete channel |
-| GET | `/:id/members` | Member | List members |
-| POST | `/:id/members` | Admin+ | Invite member |
-| PATCH | `/:id/members/:uid/role` | Owner | Change member role |
-| DELETE | `/:id/members/:uid` | Admin+ | Remove member |
-| DELETE | `/:id/leave` | Member | Leave channel |
-
-### Messages — `/api/messages`
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/:channelId` | Member | Get paginated history |
-| POST | `/:channelId` | Member | Send message (REST) |
-| PATCH | `/:channelId/:msgId/read` | Member | Mark as read |
-
-### Uploads — `/api/uploads`
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/direct` | Yes | Upload file via server |
-| POST | `/presign` | Yes | Get S3 presigned PUT URL |
-
-### AI — `/api/ai`
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/smart-replies` | Yes | Generate 2-3 reply suggestions for a message |
-| POST | `/summarize` | Yes | Summarize recent channel conversation |
-| POST | `/search` | Yes | Semantic search across channel messages |
-
-**`POST /api/ai/smart-replies`** body:
-```json
-{ "channelId": "...", "messageContent": "...", "senderName": "Alice" }
+```text
+MongoDB connected: ...
+Server running on port 5000 in development mode
 ```
-Response: `{ "suggestions": ["Reply A", "Reply B", "Reply C"] }`
 
-**`POST /api/ai/summarize`** body:
-```json
-{ "channelId": "...", "limit": 50 }
+Backend URL:
+
+```text
+http://localhost:5000
 ```
-Response: `{ "summary": "The team discussed..." }`
 
-**`POST /api/ai/search`** body:
-```json
-{ "channelId": "...", "query": "what did we decide about the deadline?" }
+Health check:
+
+```text
+http://localhost:5000/api/health
 ```
-Response: `{ "results": [{ "messageId": "...", "content": "...", "senderName": "...", "createdAt": "..." }] }`
 
----
+Expected health response:
+
+```json
+{
+  "status": "ok",
+  "timestamp": "..."
+}
+```
+
+### Terminal 2: Start Frontend
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+Expected frontend output:
+
+```text
+Local: http://localhost:5173/
+```
+
+Open the website:
+
+```text
+http://localhost:5173
+```
+
+## Testing The App Flow
+
+1. Open `http://localhost:5173`.
+2. Click **Create one** on the login page.
+3. Register a first user.
+4. Log out or open another browser/incognito window.
+5. Register a second user.
+6. Search for the second user and create a direct message.
+7. Send messages between users.
+8. Create a group channel.
+9. Add members to the group.
+10. Test typing indicators, read receipts, file upload, voice note, stories, and AI features.
+
+For AI features, `INTEGRATIONS_API_KEY` must be configured in `server/.env`.
+
+## API Overview
+
+| Area | Method And Endpoint | Purpose |
+| --- | --- | --- |
+| Health | `GET /api/health` | Check server status |
+| Auth | `POST /api/auth/register` | Register a user |
+| Auth | `POST /api/auth/login` | Login and receive JWT |
+| Auth | `POST /api/auth/logout` | Logout current user |
+| Auth | `GET /api/auth/me` | Restore logged-in user |
+| Users | `PATCH /api/users/me` | Update profile |
+| Users | `GET /api/users/search?q=` | Search users |
+| Users | `GET /api/users/:id` | Get user profile |
+| Users | `POST /api/users/:id/block` | Block user |
+| Users | `DELETE /api/users/:id/block` | Unblock user |
+| Users | `PATCH /api/users/me/status` | Update online status |
+| Channels | `GET /api/channels` | List my channels |
+| Channels | `POST /api/channels` | Create group channel |
+| Channels | `POST /api/channels/direct` | Create/get direct message channel |
+| Channels | `GET /api/channels/:id` | Get channel details |
+| Channels | `PATCH /api/channels/:id` | Update channel |
+| Channels | `DELETE /api/channels/:id` | Delete channel |
+| Channels | `GET /api/channels/:channelId/members` | List members |
+| Channels | `POST /api/channels/:channelId/members` | Add member |
+| Channels | `PATCH /api/channels/:channelId/members/:userId/role` | Change member role |
+| Channels | `DELETE /api/channels/:channelId/members/:userId` | Remove member |
+| Channels | `DELETE /api/channels/:channelId/leave` | Leave channel |
+| Messages | `GET /api/messages/:channelId` | Get paginated messages |
+| Messages | `POST /api/messages/:channelId` | Send message through REST |
+| Messages | `PATCH /api/messages/:channelId/:messageId/read` | Mark message as read |
+| Messages | `POST /api/messages/:channelId/:messageId/reply` | Reply to message |
+| Messages | `PATCH /api/messages/:channelId/:messageId/edit` | Edit message |
+| Messages | `DELETE /api/messages/:channelId/:messageId/delete-for-me` | Delete message for current user |
+| Uploads | `POST /api/uploads/direct` | Upload file through server |
+| AI | `POST /api/ai/smart-replies` | Generate reply suggestions |
+| AI | `POST /api/ai/compose` | Compose/improve message |
+| AI | `POST /api/ai/summarize` | Summarize recent conversation |
+| AI | `POST /api/ai/search` | Search conversation semantically |
+| Stories | `GET /api/stories` | List active stories |
+| Stories | `POST /api/stories` | Create story/status |
+| Stories | `PATCH /api/stories/:id/view` | Mark story as viewed |
 
 ## Socket.io Events
 
-### Client → Server
+### Client To Server
 
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `send:message` | `{ channelId, content, attachments }` | Send a message |
-| `typing:start` | `{ channelId }` | Start typing |
-| `typing:stop` | `{ channelId }` | Stop typing |
-| `message:read` | `{ channelId, messageId }` | Mark message read |
-| `channel:join` | `{ channelId }` | Join a socket room |
-| `channel:leave` | `{ channelId }` | Leave a socket room |
+| Event | Payload | Purpose |
+| --- | --- | --- |
+| `send:message` | `{ channelId, content, attachments }` | Send a real-time message |
+| `typing:start` | `{ channelId }` | Start typing indicator |
+| `typing:stop` | `{ channelId }` | Stop typing indicator |
+| `message:read` | `{ channelId, messageId }` | Mark message as read |
+| `channel:join` | `{ channelId }` | Join a channel room |
+| `channel:leave` | `{ channelId }` | Leave a channel room |
 
-### Server → Client
+### Server To Client
 
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `message:new` | `Message` | New message in channel |
-| `typing:update` | `{ channelId, userId, username, isTyping }` | Typing status |
-| `message:read_receipt` | `{ channelId, messageId, userId, readAt }` | Read receipt |
-| `presence:update` | `{ userId, status }` | User online/offline |
-| `presence:online_users` | `string[]` | Initial online user IDs |
+| Event | Payload | Purpose |
+| --- | --- | --- |
+| `message:new` | `Message` | New message broadcast |
+| `typing:update` | `{ channelId, userId, username, isTyping }` | Typing status update |
+| `message:read_receipt` | `{ channelId, messageId, userId, readAt }` | Read receipt update |
+| `presence:update` | `{ userId, status }` | Online/offline update |
+| `presence:online_users` | `string[]` | Initial online users list |
 
----
+## Troubleshooting
 
-## Database Schema
+### Login is not working
 
-### `users`
-```
-_id, username (unique), email (unique), password (hashed), avatar, status, lastSeen, timestamps
-Indexes: email, username, status
-```
+Check the backend first:
 
-### `channels`
-```
-_id, name, description, type (group|direct), owner → User, participants → [User], lastMessage → Message, lastActivity, timestamps
-Indexes: (type, participants), owner, lastActivity
+```text
+http://localhost:5000/api/health
 ```
 
-### `messages`
+If the health endpoint does not open:
+
+- Make sure the backend is running with `npm run dev`.
+- Make sure MongoDB is connected.
+- Check `server/.env`.
+- If using Atlas, whitelist your IP address.
+
+If the backend starts but login says invalid credentials:
+
+- Register a new user first.
+- Use the same email and password used during registration.
+- Check that the user exists in MongoDB.
+
+### Backend stuck before "MongoDB connected"
+
+This usually means MongoDB is unavailable.
+
+For local MongoDB:
+
+```env
+MONGO_URI=mongodb://localhost:27017/messaging_platform
 ```
-_id, channel → Channel, sender → User, content, attachments[], readBy[], deleted, system, timestamps
-Indexes: (channel, createdAt DESC), (channel, deleted, createdAt DESC)
+
+Make sure MongoDB service is running.
+
+For MongoDB Atlas:
+
+- Verify the Atlas connection string.
+- Add your IP in Network Access.
+- Confirm username and password.
+
+### Client cannot call backend
+
+Check `client/.env`:
+
+```env
+VITE_API_URL=http://localhost:5000/api
+VITE_SOCKET_URL=http://localhost:5000
 ```
 
-### `memberships`
+Restart the Vite server after changing `.env`.
+
+### AI features are not working
+
+Check `server/.env`:
+
+```env
+INTEGRATIONS_API_KEY=your_ai_gateway_key_here
 ```
-_id, user → User, channel → Channel, role (owner|admin|member), lastReadMessage → Message, joinedAt, timestamps
-Indexes: (user, channel) UNIQUE, (channel, role)
+
+Restart the backend after changing the key.
+
+### File uploads are not visible
+
+Make sure this folder exists:
+
+```text
+server/uploads/attachments
 ```
 
----
+Also make sure the backend is running because uploaded files are served from the backend origin.
 
-## Performance Notes
+## Live Hosting Guide
 
-- **Message queries**: Compound index on `(channel, createdAt DESC)` reduces history fetch from ~200ms to <30ms
-- **Pagination**: Cursor-based (`_id < before`) avoids offset scan degradation
-- **Socket.io**: Each user joins all their channel rooms on connect; delivery is direct room broadcast without polling
-- **S3 uploads**: Presigned URLs allow client-direct upload, bypassing server bandwidth
-- **Connection pool**: MongoDB `maxPoolSize: 10` for concurrent load handling
+A simple deployment split:
 
----
+- Frontend: Vercel or Netlify
+- Backend: Render, Railway, or Fly.io
+- Database: MongoDB Atlas
 
-## Security
+### Backend Production Env
 
-- Passwords hashed with `bcryptjs` (12 salt rounds)
-- JWTs stored in HttpOnly cookies + Authorization header support
-- Helmet.js for HTTP security headers
-- Rate limiting: 200 requests / 15 min per IP
-- Input validation via `express-validator` on all mutation endpoints
-- Role checks on every sensitive operation
-- File type allowlist + 10 MB size limit on uploads
+```env
+NODE_ENV=production
+PORT=5000
+MONGO_URI=mongodb+srv://username:password@cluster-name.mongodb.net/messaging_platform
+JWT_SECRET=replace_with_a_long_random_secret
+JWT_EXPIRES_IN=7d
+CLIENT_URL=https://your-frontend-domain.com
+CLIENT_ORIGINS=https://your-frontend-domain.com
+INTEGRATIONS_API_KEY=your_ai_gateway_key_here
+```
 
----
+Backend build/start settings:
+
+```bash
+npm install
+npm start
+```
+
+### Frontend Production Env
+
+```env
+VITE_API_URL=https://your-backend-domain.com/api
+VITE_SOCKET_URL=https://your-backend-domain.com
+```
+
+Frontend build settings:
+
+```bash
+npm install
+npm run build
+```
+
+Build output folder:
+
+```text
+dist
+```
+
+After deployment:
+
+- Add frontend domain to backend `CLIENT_ORIGINS`.
+- Add backend domain to frontend env variables.
+- Restart/redeploy both apps after env changes.
+- Test `/api/health`.
+- Register a fresh user and test login.
+
+## Future Enhancements
+
+- Google OAuth sign-in
+- RAG-based enterprise knowledge base
+- AI action item extraction
+- Meeting notes generator from audio/video
+- Enterprise analytics dashboard
+- Real-time translation
+- AI moderation
+- Calendar and task management integration
+
+<!--
+Google OAuth is planned for later.
+
+When enabling it:
+
+1. Create a Google OAuth 2.0 Client ID for a Web application.
+2. Add JavaScript origins:
+   - http://localhost:5173
+   - your deployed frontend URL
+3. Add these env values:
+   - client/.env: VITE_GOOGLE_CLIENT_ID=your_google_oauth_client_id_here
+   - server/.env: GOOGLE_CLIENT_ID=your_google_oauth_client_id_here
+4. Re-enable the commented GoogleAuthButton code in LoginPage.jsx and RegisterPage.jsx.
+-->
+
+## Portfolio Keywords
+
+MERN, Socket.io, MongoDB, JWT, AI assistant, semantic search, RBAC, real-time systems, enterprise collaboration, file sharing, responsive UI, full-stack development.
 
 ## License
 
-Proprietary — owned by Namratha R. All rights reserved.
+Proprietary - owned by Namratha R. All rights reserved.

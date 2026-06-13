@@ -1,5 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getMe, login as apiLogin, register as apiRegister, logout as apiLogout } from '../api/auth';
+import {
+  getMe,
+  login as apiLogin,
+  register as apiRegister,
+  googleAuth as apiGoogleAuth,
+  logout as apiLogout,
+  updateProfile as apiUpdateProfile,
+  blockUser as apiBlockUser,
+  unblockUser as apiUnblockUser,
+} from '../api/auth';
 
 const AuthContext = createContext(null);
 
@@ -31,6 +40,13 @@ export const AuthProvider = ({ children }) => {
     return data.user;
   }, []);
 
+  const loginWithGoogle = useCallback(async (credential) => {
+    const { data } = await apiGoogleAuth(credential);
+    localStorage.setItem('token', data.token);
+    setUser(data.user);
+    return data.user;
+  }, []);
+
   const logout = useCallback(async () => {
     try { await apiLogout(); } catch (_) {}
     localStorage.removeItem('token');
@@ -41,8 +57,26 @@ export const AuthProvider = ({ children }) => {
     setUser((prev) => ({ ...prev, ...updates }));
   }, []);
 
+  const updateProfile = useCallback(async (updates) => {
+    const { data } = await apiUpdateProfile(updates);
+    setUser(data.user);
+    return data.user;
+  }, []);
+
+  const blockUser = useCallback(async (id) => {
+    const { data } = await apiBlockUser(id);
+    setUser(data.user);
+    return data.user;
+  }, []);
+
+  const unblockUser = useCallback(async (id) => {
+    const { data } = await apiUnblockUser(id);
+    setUser(data.user);
+    return data.user;
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, loginWithGoogle, logout, updateUser, updateProfile, blockUser, unblockUser }}>
       {children}
     </AuthContext.Provider>
   );

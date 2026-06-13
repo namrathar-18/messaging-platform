@@ -1,12 +1,24 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
 const { authenticate } = require('../middleware/auth');
 const { upload, handleMulterError } = require('../middleware/upload');
-const { uploadToS3, generatePresignedPutUrl } = require('../utils/s3');
 
 const router = express.Router();
 router.use(authenticate);
 
-// POST /api/uploads/direct  - Upload file via server (server-side S3 put)
+const UPLOAD_ROOT = path.join(__dirname, '..', '..', 'uploads');
+const ATTACHMENT_FOLDER = 'attachments';
+
+const ensureUploadFolder = () => {
+  const dir = path.join(UPLOAD_ROOT, ATTACHMENT_FOLDER);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  return dir;
+};
+
 router.post(
   '/direct',
   upload.single('file'),
@@ -18,11 +30,19 @@ router.post(
       }
 
       const { originalname, mimetype, buffer, size } = req.file;
-      const { key, url } = await uploadToS3(buffer, originalname, mimetype);
+      const ext = path.extname(originalname);
+      const filename = `${uuidv4()}${ext}`;
+      const dir = ensureUploadFolder();
+      const filePath = path.join(dir, filename);
+
+      await fs.promises.writeFile(filePath, buffer);
+
+      const key = `${ATTACHMENT_FOLDER}/${filename}`;
+      const url = `${req.protocol}://${req.get('host')}/uploads/${key}`;
 
       res.status(201).json({
         attachment: {
-          filename: key.split('/').pop(),
+          filename,
           originalName: originalname,
           mimeType: mimetype,
           size,
@@ -35,32 +55,5 @@ router.post(
     }
   }
 );
-
-// POST /api/uploads/presign  - Get a presigned PUT URL for client-side direct upload
-router.post('/presign', async (req, res, next) => {
-  try {
-    const { filename, mimeType, size } = req.body;
-
-    if (!filename || !mimeType) {
-      return res.status(400).json({ error: 'filename and mimeType are required.' });
-    }
-
-    const MAX_SIZE = 10 * 1024 * 1024;
-    if (size && size > MAX_SIZE) {
-      return res.status(400).json({ error: 'File size exceeds the 10 MB limit.' });
-    }
-
-    const { key, presignedUrl, publicUrl } = await generatePresignedPutUrl(filename, mimeType);
-
-    res.json({
-      presignedUrl,
-      publicUrl,
-      key,
-      filename: key.split('/').pop(),
-    });
-  } catch (err) {
-    next(err);
-  }
-});
 
 module.exports = router;

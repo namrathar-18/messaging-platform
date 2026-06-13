@@ -13,35 +13,3 @@ export const uploadFileDirect = (file, onProgress) => {
     },
   });
 };
-
-// Get presigned URL then upload directly to S3 from browser
-export const uploadFilePresigned = async (file, onProgress) => {
-  // 1. Get presigned PUT URL from server
-  const { data } = await api.post('/uploads/presign', {
-    filename: file.name,
-    mimeType: file.type,
-    size: file.size,
-  });
-
-  const { presignedUrl, publicUrl, key } = data;
-
-  // 2. PUT directly to S3
-  await fetch(presignedUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': file.type },
-    body: file,
-  });
-
-  return {
-    data: {
-      attachment: {
-        filename: key.split('/').pop(),
-        originalName: file.name,
-        mimeType: file.type,
-        size: file.size,
-        url: publicUrl,
-        key,
-      },
-    },
-  };
-};

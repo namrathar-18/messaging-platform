@@ -6,8 +6,8 @@ const attachmentSchema = new mongoose.Schema(
     originalName: { type: String, required: true },
     mimeType: { type: String, required: true },
     size: { type: Number, required: true }, // bytes
-    url: { type: String, required: true }, // S3 public/presigned URL
-    key: { type: String, required: true }, // S3 object key
+    url: { type: String, required: true }, // Public URL for uploaded file
+    key: { type: String, required: true }, // Local upload storage key
   },
   { _id: false }
 );
@@ -51,6 +51,34 @@ const messageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    // Replying/editing metadata
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Message',
+      default: null,
+    },
+    editedAt: {
+      type: Date,
+      default: null,
+    },
+
+    // Soft-delete for "delete for me"
+    // If `deletedFor` contains a user, we hide it only from that user.
+    deletedFor: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: true,
+        },
+        deletedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+
     system: {
       // For system messages like "User joined channel"
       type: Boolean,

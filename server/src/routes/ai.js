@@ -115,6 +115,37 @@ Respond ONLY with a JSON array of 3 strings, like:
   }
 });
 
+// POST /api/ai/compose
+// Body: { text, action }
+// Returns: { text }
+router.post('/compose', async (req, res, next) => {
+  try {
+    const { text = '', action = 'rewrite' } = req.body;
+    const trimmed = text.trim();
+    if (!trimmed) return res.status(400).json({ error: 'Text is required.' });
+
+    const allowedActions = {
+      rewrite: 'Rewrite this message so it is clearer, natural, and ready to send.',
+      shorten: 'Shorten this message while preserving the core meaning.',
+      professional: 'Rewrite this message in a polished professional tone.',
+      friendly: 'Rewrite this message in a warm, friendly tone.',
+    };
+
+    const instruction = allowedActions[action] || allowedActions.rewrite;
+    const prompt = `${instruction}
+
+Message:
+${trimmed}
+
+Return only the improved message. Do not add quotes, labels, or explanations.`;
+
+    const improved = await callLLM([{ role: 'user', parts: [{ text: prompt }] }]);
+    res.json({ text: improved || trimmed });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── POST /api/ai/summarize ────────────────────────────────────────────────
 // Body: { channelId, limit? }
 // Returns: { summary: string }

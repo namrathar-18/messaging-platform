@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const Channel = require('../models/Channel');
 const Membership = require('../models/Membership');
 const Message = require('../models/Message');
+const User = require('../models/User');
 const { authenticate } = require('../middleware/auth');
 const { requireChannelMembership, requireRole } = require('../middleware/rbac');
 
@@ -90,6 +91,18 @@ router.post('/direct', async (req, res, next) => {
     const { targetUserId } = req.body;
     if (!targetUserId) {
       return res.status(400).json({ error: 'targetUserId is required.' });
+    }
+
+    const [me, target] = await Promise.all([
+      User.findById(req.user._id).select('blockedUsers'),
+      User.findById(targetUserId).select('blockedUsers'),
+    ]);
+    if (!target) return res.status(404).json({ error: 'User not found.' });
+    if (me.blockedUsers?.some((id) => id.toString() === targetUserId.toString())) {
+      return res.status(403).json({ error: 'Unblock this contact before starting a chat.' });
+    }
+    if (target.blockedUsers?.some((id) => id.toString() === req.user._id.toString())) {
+      return res.status(403).json({ error: 'You cannot message this contact.' });
     }
 
     // Check if DM already exists between these two users

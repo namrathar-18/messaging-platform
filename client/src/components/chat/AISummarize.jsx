@@ -32,16 +32,17 @@ export default function AISummarize({ channelId, messageCount }) {
   };
 
   return (
-    <div className="px-4 py-2 border-b border-gray-100 bg-gradient-to-r from-brand-50 to-purple-50">
+    <div className="px-4 py-2 border-b border-gray-100 bg-gradient-to-r from-brand-50 to-purple-50 dark:border-white/10 dark:from-brand-50/10 dark:to-purple-500/10">
       {!summary && !loading && !error && (
         <button
           onClick={handleSummarize}
-          className="flex items-center gap-1.5 text-xs text-brand-600 hover:text-brand-700 font-medium transition py-0.5"
+          className="flex items-center gap-1.5 text-xs text-brand-600 hover:text-brand-700 dark:text-brand-300 dark:hover:text-brand-200 font-medium transition py-0.5"
         >
           <Sparkles className="w-3.5 h-3.5" />
           Summarize conversation
         </button>
       )}
+
 
       {loading && (
         <div className="flex items-center gap-2 text-xs text-gray-500 py-1">

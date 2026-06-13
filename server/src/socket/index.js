@@ -5,6 +5,7 @@ const Message = require('../models/Message');
 const Channel = require('../models/Channel');
 const Membership = require('../models/Membership');
 const { getBotUser, BOT_USERNAME } = require('../utils/seedBot');
+const { parseAllowedOrigins } = require('../utils/origins');
 
 // Map: userId -> Set of socketIds (a user can have multiple tabs)
 const onlineUsers = new Map();
@@ -139,9 +140,11 @@ Reply helpfully and concisely (under 200 words). If it's a coding question, incl
 }
 
 const initSocket = (httpServer) => {
+  const allowedOrigins = parseAllowedOrigins();
+
   const io = new Server(httpServer, {
     cors: {
-      origin: process.env.CLIENT_URL || 'http://localhost:5173',
+      origin: allowedOrigins,
       methods: ['GET', 'POST'],
       credentials: true,
     },
@@ -205,6 +208,20 @@ const initSocket = (httpServer) => {
         const membership = await Membership.findOne({ user: socket.user._id, channel: channelId });
         if (!membership) {
           return ack?.({ error: 'Not a member of this channel.' });
+        }
+
+        const channel = await Channel.findById(channelId).select('type participants');
+        if (channel?.type === 'direct') {
+          const otherId = channel.participants.find((id) => id.toString() !== socket.user._id.toString());
+          const [sender, recipient] = await Promise.all([
+            User.findById(socket.user._id).select('blockedUsers'),
+            User.findById(otherId).select('blockedUsers'),
+          ]);
+          const senderBlocked = sender?.blockedUsers?.some((id) => id.toString() === otherId?.toString());
+          const recipientBlocked = recipient?.blockedUsers?.some((id) => id.toString() === socket.user._id.toString());
+          if (senderBlocked || recipientBlocked) {
+            return ack?.({ error: 'Messaging is unavailable because this contact is blocked.' });
+          }
         }
 
         if (!content.trim() && attachments.length === 0) {

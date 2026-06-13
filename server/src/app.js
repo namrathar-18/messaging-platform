@@ -1,9 +1,11 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
+const { parseAllowedOrigins } = require('./utils/origins');
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -11,17 +13,28 @@ const channelRoutes = require('./routes/channels');
 const messageRoutes = require('./routes/messages');
 const uploadRoutes = require('./routes/uploads');
 const aiRoutes = require('./routes/ai');
+const storyRoutes = require('./routes/stories');
 
 const app = express();
 
-// Security headers
-app.use(helmet());
+// Security headers. Uploaded media is served from the API origin and rendered by the Vite origin in dev.
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
 // CORS
+const allowedOrigins = new Set(parseAllowedOrigins());
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    return callback(new Error(`CORS blocked origin: ${origin}`));
+  },
   credentials: true,
 }));
+
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+});
 
 // Rate limiting
 const limiter = rateLimit({
@@ -48,6 +61,8 @@ app.use('/api/channels', channelRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/stories', storyRoutes);
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // Health check
 app.get('/api/health', (req, res) => {
