@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail, MessageSquare, Moon, Sun } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 // TODO: Enable Google OAuth later.
@@ -55,9 +55,7 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-md animate-fade-in rounded-[28px] border border-white/45 bg-white/70 p-8 shadow-2xl shadow-slate-900/10 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/60">
         <div className="mb-8 flex flex-col items-center">
-          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400 via-cyan-500 to-fuchsia-500 shadow-lg shadow-cyan-500/20">
-            <MessageSquare className="h-7 w-7 text-white" />
-          </div>
+          <img src="/pinglink-logo.svg" alt="PingLink AI" className="mb-3 h-16 w-16 drop-shadow-lg" />
           <h1 className="text-2xl font-black text-slate-950 dark:text-white">Welcome back</h1>
           <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-300">Sign in to your account</p>
         </div>

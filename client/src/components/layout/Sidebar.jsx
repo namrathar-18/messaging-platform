@@ -5,8 +5,8 @@ import {
   Edit3,
   Hash,
   LogOut,
-  MessageSquare,
   Moon,
+  Phone,
   Plus,
   Save,
   Search,
@@ -71,9 +71,7 @@ export default function Sidebar({ channelsData, activeChannel, onSelectChannel }
         <div className="border-b border-white/35 px-5 py-4 dark:border-white/10">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 via-cyan-500 to-fuchsia-500 shadow-lg">
-                <MessageSquare className="h-5 w-5 text-white" />
-              </div>
+              <img src="/pinglink-logo.svg" alt="PingLink AI" className="h-10 w-10 shrink-0 drop-shadow-md" />
               <div>
                 <h1 className="text-lg font-black">PingLink AI</h1>
                 <p className="text-xs font-semibold text-slate-500 dark:text-slate-300">AI messaging hub</p>
@@ -259,6 +257,7 @@ function ProfileModal({ user, onClose, onSave }) {
     email: user?.email || '',
     avatar: user?.avatar || '',
     status: user?.status || 'online',
+    phone: user?.phone || '',
   });
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -332,6 +331,7 @@ function ProfileModal({ user, onClose, onSave }) {
           </div>
           <ProfileField label="Username" value={form.username} onChange={(value) => updateField('username', value)} />
           <ProfileField label="Email" type="email" value={form.email} onChange={(value) => updateField('email', value)} />
+          <ProfileField label="Phone number" type="tel" value={form.phone} onChange={(value) => updateField('phone', value)} placeholder="+91 98765 43210" />
           <ProfileField label="Avatar URL" value={form.avatar} onChange={(value) => updateField('avatar', value)} placeholder="https://..." />
           <label className="block">
             <span className="mb-1.5 block text-sm font-bold text-slate-700 dark:text-slate-200">Status</span>

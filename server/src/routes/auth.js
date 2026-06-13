@@ -66,6 +66,11 @@ router.post(
     body('password')
       .isLength({ min: 6 })
       .withMessage('Password must be at least 6 characters'),
+    body('phone')
+      .optional({ nullable: true, checkFalsy: true })
+      .trim()
+      .matches(/^\+?[0-9\s\-().]{7,20}$/)
+      .withMessage('Enter a valid phone number'),
   ],
   async (req, res, next) => {
     try {
@@ -74,7 +79,7 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const { username, email, password } = req.body;
+      const { username, email, password, phone } = req.body;
 
       const existingUser = await User.findOne({ $or: [{ email }, { username }] });
       if (existingUser) {
@@ -82,7 +87,7 @@ router.post(
         return res.status(409).json({ error: `${field} is already taken.` });
       }
 
-      const user = await User.create({ username, email, password });
+      const user = await User.create({ username, email, password, phone: phone || null });
       sendTokenResponse(user, 201, res);
     } catch (err) {
       next(err);

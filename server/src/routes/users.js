@@ -22,6 +22,7 @@ router.patch(
     body('email').optional().isEmail().normalizeEmail().withMessage('Valid email required'),
     body('avatar').optional({ nullable: true }).isString().trim().isLength({ max: 500 }),
     body('status').optional().isIn(['online', 'away', 'busy', 'offline']).withMessage('Invalid status value.'),
+    body('phone').optional({ nullable: true, checkFalsy: true }).trim().matches(/^\+?[0-9\s\-().]{7,20}$/).withMessage('Enter a valid phone number'),
   ],
   async (req, res, next) => {
     try {
@@ -31,7 +32,7 @@ router.patch(
       }
 
       const updates = {};
-      ['username', 'email', 'avatar', 'status'].forEach((field) => {
+      ['username', 'email', 'avatar', 'status', 'phone'].forEach((field) => {
         if (Object.prototype.hasOwnProperty.call(req.body, field)) updates[field] = req.body[field];
       });
 

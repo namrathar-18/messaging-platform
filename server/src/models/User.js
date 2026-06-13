@@ -55,6 +55,11 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    phone: {
+      type: String,
+      default: null,
+      trim: true,
+    },
     blockedUsers: [
       {
         type: mongoose.Schema.Types.ObjectId,

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail, MessageSquare, Moon, Sun, User } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Moon, Phone, Sun, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 // TODO: Enable Google OAuth later.
@@ -10,7 +10,7 @@ export default function RegisterPage() {
   const { register } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: '', email: '', password: '' });
+  const [form, setForm] = useState({ username: '', email: '', password: '', phone: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState([]);
@@ -24,7 +24,7 @@ export default function RegisterPage() {
     setFieldErrors([]);
     setLoading(true);
     try {
-      await register(form.username, form.email, form.password);
+      await register(form.username, form.email, form.password, form.phone);
       navigate('/');
     } catch (err) {
       const data = err.response?.data;
@@ -65,9 +65,7 @@ export default function RegisterPage() {
 
       <div className="relative w-full max-w-md animate-fade-in rounded-[28px] border border-white/45 bg-white/70 p-8 shadow-2xl shadow-slate-900/10 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/60">
         <div className="mb-8 flex flex-col items-center">
-          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400 via-cyan-500 to-fuchsia-500 shadow-lg shadow-cyan-500/20">
-            <MessageSquare className="h-7 w-7 text-white" />
-          </div>
+          <img src="/pinglink-logo.svg" alt="PingLink AI" className="mb-3 h-16 w-16 drop-shadow-lg" />
           <h1 className="text-2xl font-black text-slate-950 dark:text-white">Create account</h1>
           <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-300">Join the conversation today</p>
         </div>
@@ -111,6 +109,24 @@ export default function RegisterPage() {
               />
             </div>
             {getFieldError('email') && <p className="mt-1 text-xs text-red-600 dark:text-red-300">{getFieldError('email')}</p>}
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-bold text-slate-700 dark:text-slate-200">
+              Phone number <span className="font-medium text-slate-400">(optional — used for calls)</span>
+            </label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="tel"
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                placeholder="+91 98765 43210"
+                className={fieldClass('phone')}
+              />
+            </div>
+            {getFieldError('phone') && <p className="mt-1 text-xs text-red-600 dark:text-red-300">{getFieldError('phone')}</p>}
           </div>
 
           <div>
