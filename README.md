@@ -1,5 +1,7 @@
 # Real-Time Collaborative Messaging Platform
 
+Owner: Namratha R
+
 A full-stack MERN messaging platform supporting 100+ concurrent users, real-time communication via Socket.io, role-based access control, and AWS S3 file uploads.
 
 ---
