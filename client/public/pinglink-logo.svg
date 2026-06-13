@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="PingLink AI">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2dd4bf"/>
+      <stop offset="48%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#d946ef"/>
+    </linearGradient>
+    <linearGradient id="bolt" x1="28" y1="18" x2="36" y2="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0e7490"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="1" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
+  <!-- Subtle inner border -->
+  <rect x="1.5" y="1.5" width="61" height="61" rx="14.5" stroke="white" stroke-opacity="0.2" stroke-width="1"/>
+
+  <!-- Chat bubble -->
+  <path d="M11 19C11 15.134 14.134 12 18 12H46C49.866 12 53 15.134 53 19V37C53 40.866 49.866 44 46 44H33L22 52V44H18C14.134 44 11 40.866 11 37V19Z" fill="white" fill-opacity="0.95"/>
+
+  <!-- Lightning bolt (Ping!) -->
+  <path d="M37 15L25 33H33L28 49L44 28H36L37 15Z" fill="url(#bolt)" filter="url(#glow)"/>
+
+  <!-- AI sparkle dots -->
+  <circle cx="46" cy="37" r="2.5" fill="#0891b2" fill-opacity="0.6"/>
+  <circle cx="40.5" cy="37" r="2.5" fill="#2dd4bf" fill-opacity="0.4"/>
+</svg>

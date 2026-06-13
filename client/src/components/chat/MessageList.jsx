@@ -3,7 +3,7 @@ import MessageItem from './MessageItem';
 import TypingIndicator from './TypingIndicator';
 import SmartReplies from './SmartReplies';
 
-export default function MessageList({ messages, loading, hasMore, onLoadMore, currentUserId, typingUsers, isOnline, channelId, onSmartReply }) {
+export default function MessageList({ messages, loading, hasMore, onLoadMore, currentUserId, typingUsers, isOnline, channelId, onSmartReply, onStartThread }) {
   const bottomRef = useRef(null);
   const containerRef = useRef(null);
   const prevScrollHeightRef = useRef(0);
@@ -80,6 +80,8 @@ export default function MessageList({ messages, loading, hasMore, onLoadMore, cu
           isOwnMessage={(message.sender?._id || message.sender) === currentUserId}
           isGrouped={isGrouped}
           currentUserId={currentUserId}
+          channelId={channelId}
+          onStartThread={onStartThread}
         />
       ))}
 

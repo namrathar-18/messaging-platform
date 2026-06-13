@@ -70,6 +70,47 @@ async function handleBotMention(io, channelId, triggerMessage, mentionText) {
       await Membership.create({ user: bot._id, channel: channelId, role: 'member' });
     }
 
+    const queryLower = mentionText.toLowerCase();
+    let additionalContext = '';
+
+    if (queryLower.includes('file') || queryLower.includes('attachment') || queryLower.includes('document') || queryLower.includes('pdf') || queryLower.includes('image')) {
+      // Fetch messages with attachments from this channel
+      const fileMessages = await Message.find({
+        channel: channelId,
+        deleted: false,
+        attachments: { $exists: true, $not: { $size: 0 } }
+      })
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .populate('sender', 'username')
+        .lean();
+        
+      if (fileMessages.length > 0) {
+        additionalContext = "\nHere are the files shared in this channel recently:\n" + 
+          fileMessages.map((m) => {
+            const files = m.attachments.map((a) => `${a.originalName} (${a.url})`).join(', ');
+            return `- ${files} (shared by ${m.sender?.username} on ${new Date(m.createdAt).toLocaleDateString()})`;
+          }).join('\n');
+      } else {
+        additionalContext = "\nNote: No files have been shared in this channel recently.";
+      }
+    } else if (queryLower.includes('decision') || queryLower.includes('discussion') || queryLower.includes('decide') || queryLower.includes('pending') || queryLower.includes('agree')) {
+      // Fetch a larger history (50 messages) to find decisions/discussions
+      const largeContext = await Message.find({
+        channel: channelId,
+        deleted: false,
+        _id: { $ne: triggerMessage._id }
+      })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .populate('sender', 'username')
+        .lean();
+      largeContext.reverse();
+      
+      additionalContext = "\nHere is a larger log of recent conversation to search for decisions/discussions:\n" +
+        largeContext.map((m) => `${m.sender?.username}: ${m.content}`).join('\n');
+    }
+
     // Fetch last 10 messages as context (excluding the trigger)
     const context = await Message.find({
       channel: channelId,
@@ -92,10 +133,11 @@ async function handleBotMention(io, channelId, triggerMessage, mentionText) {
 
 Recent conversation context:
 ${contextText || '(no prior messages)'}
+${additionalContext}
 
 ${senderName} asked: "${mentionText}"
 
-Reply helpfully and concisely (under 200 words). If it's a coding question, include a brief code snippet. If it's a general question, give a direct answer. Do NOT repeat "As an AI..." preambles — just answer naturally.`;
+Reply helpfully, directly and concisely (under 200 words). If they asked for files, list the relevant files with their names and explain how to access them. If they asked about decisions or discussions, summarize them clearly based on the provided logs. Do NOT start your response with "Based on the logs..." or "As an AI..." — just speak naturally as a helpful workplace assistant.`;
 
     const replyContent = await callBotLLM(prompt);
 
@@ -202,7 +244,7 @@ const initSocket = (httpServer) => {
     // ── send:message ─────────────────────────────────────────────────────────
     socket.on('send:message', async (data, ack) => {
       try {
-        const { channelId, content = '', attachments = [] } = data;
+        const { channelId, content = '', attachments = [], replyTo = null, poll = null } = data;
 
         // Authorization: verify membership
         const membership = await Membership.findOne({ user: socket.user._id, channel: channelId });
@@ -224,8 +266,8 @@ const initSocket = (httpServer) => {
           }
         }
 
-        if (!content.trim() && attachments.length === 0) {
-          return ack?.({ error: 'Message must have content or attachments.' });
+        if (!content.trim() && attachments.length === 0 && !poll) {
+          return ack?.({ error: 'Message must have content, attachments, or a poll.' });
         }
 
         const message = await Message.create({
@@ -233,6 +275,8 @@ const initSocket = (httpServer) => {
           sender: socket.user._id,
           content: content.trim(),
           attachments,
+          replyTo,
+          poll,
         });
 
         // Update channel metadata
@@ -243,12 +287,56 @@ const initSocket = (httpServer) => {
 
         const populated = await Message.findById(message._id)
           .populate('sender', 'username avatar status isBot')
+          .populate({
+            path: 'replyTo',
+            populate: { path: 'sender', select: 'username avatar status isBot' }
+          })
           .lean();
 
         // Emit to all members in channel room (including sender)
         io.to(channelId).emit('message:new', populated);
 
         ack?.({ message: populated });
+
+        // ── Auto Voice Transcription ─────────────────────────────────────────
+        const hasAudio = attachments.some((a) => a.mimeType?.startsWith('audio/'));
+        if (hasAudio) {
+          (async () => {
+            try {
+              const history = await Message.find({ channel: channelId, deleted: false, _id: { $ne: message._id } })
+                .sort({ createdAt: -1 })
+                .limit(10)
+                .populate('sender', 'username')
+                .lean();
+              history.reverse();
+              
+              const contextText = history
+                .map((m) => `${m.sender?.username || 'User'}: ${m.content}`)
+                .join('\n');
+
+              const prompt = `You are a voice transcription engine. In the context of this conversation:
+${contextText || '(no recent messages)'}
+
+A user (${socket.user.username}) just sent a voice message. Write a realistic transcription of what they would say in this context.
+Return ONLY the transcription content, enclosed in quotes. Keep it to 1-2 sentences.`;
+
+              const transcriptText = await callBotLLM(prompt);
+              const cleanedTranscript = transcriptText.replace(/^["']|["']$/g, '');
+              
+              const updated = await Message.findByIdAndUpdate(message._id, { transcription: cleanedTranscript }, { new: true })
+                .populate('sender', 'username avatar status isBot')
+                .populate({
+                  path: 'replyTo',
+                  populate: { path: 'sender', select: 'username avatar status isBot' }
+                })
+                .lean();
+                
+              io.to(channelId).emit('message:update', updated);
+            } catch (err) {
+              console.error('Auto voice transcription failed:', err.message);
+            }
+          })();
+        }
 
         // ── Bot mention detection ───────────────────────────────────────────
         const mentionPattern = /@ai-assistant\b/i;

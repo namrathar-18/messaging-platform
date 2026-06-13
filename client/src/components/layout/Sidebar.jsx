@@ -13,6 +13,7 @@ import {
   Sun,
   Users,
   X,
+  Bell,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
@@ -21,6 +22,7 @@ import { uploadFileDirect } from '../../api/uploads';
 import CreateChannelModal from '../chat/CreateChannelModal';
 import NewDirectMessageModal from '../chat/NewDirectMessageModal';
 import StoriesTray from './StoriesTray';
+import SmartNotificationsModal from '../chat/SmartNotificationsModal';
 
 export default function Sidebar({ channelsData, activeChannel, onSelectChannel }) {
   const { user, logout, updateProfile } = useAuth();
@@ -33,6 +35,7 @@ export default function Sidebar({ channelsData, activeChannel, onSelectChannel }
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showNewDM, setShowNewDM] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showSmartNotifications, setShowSmartNotifications] = useState(false);
   const [search, setSearch] = useState('');
 
   const groupChannels = channels.filter((c) => c.type === 'group');
@@ -72,17 +75,30 @@ export default function Sidebar({ channelsData, activeChannel, onSelectChannel }
                 <MessageSquare className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-black">MessengerApp</h1>
+                <h1 className="text-lg font-black">PingLink AI</h1>
                 <p className="text-xs font-semibold text-slate-500 dark:text-slate-300">AI messaging hub</p>
               </div>
             </div>
-            <button
-              onClick={toggleTheme}
-              className="rounded-xl border border-white/30 bg-white/35 p-2 text-slate-800 hover:bg-white/55 dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
-              title={isDark ? 'Light mode' : 'Dark mode'}
-            >
-              {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setShowSmartNotifications(true)}
+                className="relative rounded-xl border border-white/30 bg-white/35 p-2 text-slate-800 hover:bg-white/55 dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+                title="Smart Notifications"
+              >
+                <Bell className="h-5 w-5" />
+                <span className="absolute top-1 right-1 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                </span>
+              </button>
+              <button
+                onClick={toggleTheme}
+                className="rounded-xl border border-white/30 bg-white/35 p-2 text-slate-800 hover:bg-white/55 dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+                title={isDark ? 'Light mode' : 'Dark mode'}
+              >
+                {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              </button>
+            </div>
           </div>
 
           <div className="relative">
@@ -183,6 +199,7 @@ export default function Sidebar({ channelsData, activeChannel, onSelectChannel }
       {showCreateGroup && <CreateChannelModal onClose={() => setShowCreateGroup(false)} onCreate={handleCreateGroup} />}
       {showNewDM && <NewDirectMessageModal onClose={() => setShowNewDM(false)} onSelect={handleNewDM} />}
       {showProfile && <ProfileModal user={user} onClose={() => setShowProfile(false)} onSave={updateProfile} />}
+      {showSmartNotifications && <SmartNotificationsModal onClose={() => setShowSmartNotifications(false)} />}
     </>
   );
 }

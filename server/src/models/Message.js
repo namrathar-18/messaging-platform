@@ -84,6 +84,25 @@ const messageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    // AI voice transcription
+    transcription: {
+      type: String,
+      default: null,
+    },
+
+    // Interactive Polls
+    poll: {
+      question: { type: String },
+      options: [
+        {
+          text: { type: String, required: true },
+          votes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+        }
+      ],
+      closed: { type: Boolean, default: false },
+      decisionSummary: { type: String, default: null },
+    },
   },
   {
     timestamps: true,

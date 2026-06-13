@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Bot, FileText, Image, Loader2, Mic, Paperclip, Send, Sparkles, Square, Wand2, X, Zap } from 'lucide-react';
+import { BarChart2, Bot, FileText, Image, Loader2, Mic, Paperclip, Send, Sparkles, Square, Wand2, X, Zap } from 'lucide-react';
 import api from '../../api/axios';
 import { uploadFileDirect } from '../../api/uploads';
 import { getMembers } from '../../api/channels';
@@ -7,7 +7,7 @@ import { getMembers } from '../../api/channels';
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 const BOT_ENTRY = { _id: 'bot', username: 'ai-assistant', isBot: true };
 
-export default function MessageInput({ channelId, channelName, onSend, onTyping, prefillText, onPrefillConsumed, disabled = false }) {
+export default function MessageInput({ channelId, channelName, onSend, onTyping, prefillText, onPrefillConsumed, disabled = false, onCreatePollClick }) {
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState([]);
   const [sending, setSending] = useState(false);
@@ -300,6 +300,17 @@ export default function MessageInput({ channelId, channelName, onSend, onTyping,
         <AiButton action="rewrite" label="Rewrite" icon={<Wand2 className="h-3.5 w-3.5" />} loading={aiLoading} onClick={smartCompose} disabled={disabled} />
         <AiButton action="shorten" label="Shorten" icon={<Zap className="h-3.5 w-3.5" />} loading={aiLoading} onClick={smartCompose} disabled={disabled} />
         <AiButton action="professional" label="Professional" icon={<Sparkles className="h-3.5 w-3.5" />} loading={aiLoading} onClick={smartCompose} disabled={disabled} />
+        {onCreatePollClick && (
+          <button
+            onClick={onCreatePollClick}
+            disabled={disabled}
+            className="flex items-center gap-1.5 rounded-full border border-white/35 bg-white/35 px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-white/60 disabled:opacity-60 dark:border-white/10 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/20"
+            title="Create Poll"
+          >
+            <BarChart2 className="h-3.5 w-3.5" />
+            Poll
+          </button>
+        )}
       </div>
 
       {attachments.length > 0 && (

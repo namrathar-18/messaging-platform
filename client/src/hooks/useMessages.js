@@ -39,13 +39,17 @@ export const useMessages = (channelId) => {
 
     const handleNewMessage = (msg) => {
       if (msg.channel !== channelId && msg.channel?._id !== channelId) return;
+      if (msg.replyTo) return; // Ignore threaded replies in the main feed
       setMessages((prev) => {
-        // Deduplicate
         if (prev.find((m) => m._id === msg._id)) return prev;
         return [...prev, msg];
       });
-      // Auto-mark as read
       emit('message:read', { channelId, messageId: msg._id });
+    };
+
+    const handleUpdateMessage = (msg) => {
+      if (msg.channel !== channelId && msg.channel?._id !== channelId) return;
+      setMessages((prev) => prev.map((m) => (m._id === msg._id ? msg : m)));
     };
 
     const handleReadReceipt = ({ messageId, userId, readAt }) => {
@@ -68,14 +72,12 @@ export const useMessages = (channelId) => {
       if (cId !== channelId) return;
       if (userId === user?._id?.toString()) return;
 
-      // Clear existing timer for this user
       if (typingTimerRef.current[userId]) {
         clearTimeout(typingTimerRef.current[userId]);
       }
 
       if (isTyping) {
         setTypingUsers((prev) => ({ ...prev, [userId]: username }));
-        // Auto-clear after 4s in case stop event is missed
         typingTimerRef.current[userId] = setTimeout(() => {
           setTypingUsers((prev) => {
             const next = { ...prev };
@@ -93,14 +95,15 @@ export const useMessages = (channelId) => {
     };
 
     const unsubNew = on('message:new', handleNewMessage);
+    const unsubUpdate = on('message:update', handleUpdateMessage);
     const unsubReceipt = on('message:read_receipt', handleReadReceipt);
     const unsubTyping = on('typing:update', handleTypingUpdate);
 
     return () => {
       off('message:new', handleNewMessage);
+      off('message:update', handleUpdateMessage);
       off('message:read_receipt', handleReadReceipt);
       off('typing:update', handleTypingUpdate);
-      // Clear typing timers
       Object.values(typingTimerRef.current).forEach(clearTimeout);
       typingTimerRef.current = {};
     };
@@ -138,14 +141,14 @@ export const useMessages = (channelId) => {
 
   // Send message via socket
   const sendMessage = useCallback(
-    (content, attachments = []) => {
+    (content, attachments = [], poll = null) => {
       return new Promise((resolve, reject) => {
         // Stop typing
         isTypingRef.current = false;
         clearTimeout(typingTimeoutRef.current);
         emit('typing:stop', { channelId });
 
-        emit('send:message', { channelId, content, attachments }, (response) => {
+        emit('send:message', { channelId, content, attachments, poll }, (response) => {
           if (response?.error) reject(new Error(response.error));
           else resolve(response?.message);
         });

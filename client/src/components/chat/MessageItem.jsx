@@ -1,9 +1,10 @@
 import React from 'react';
 import { format, isToday, isYesterday } from 'date-fns';
-import { FileText, Download, CheckCheck, Check, Bot, Sparkles, Mic } from 'lucide-react';
+import { FileText, Download, CheckCheck, Check, Bot, Sparkles, Mic, MessageSquare } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import PollCard from './PollCard';
 
-export default function MessageItem({ message, isOwnMessage, isGrouped, currentUserId }) {
+export default function MessageItem({ message, isOwnMessage, isGrouped, currentUserId, channelId, onStartThread }) {
   const { isDark } = useTheme();
   const sender = message.sender;
   const senderName = sender?.username || 'Unknown';
@@ -64,27 +65,31 @@ export default function MessageItem({ message, isOwnMessage, isGrouped, currentU
           </div>
         )}
 
-        {/* Message bubble */}
-        <div
-          className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words shadow-md transition-all hover:shadow-lg ${
-            isOwnMessage
-              ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-br-none'
-              : isBot
-              ? isDark
-                ? 'bg-gradient-to-br from-purple-900/40 to-pink-900/40 border border-purple-700/50 text-white rounded-bl-none'
-                : 'bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 text-gray-900 rounded-bl-none'
-              : isDark
-              ? 'bg-slate-700 text-white rounded-bl-none'
-              : 'bg-slate-100 text-gray-900 rounded-bl-none'
-          }`}
-        >
-          {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
+        {message.poll ? (
+          <PollCard message={message} currentUserId={currentUserId} channelId={channelId} />
+        ) : (
+          /* Message bubble */
+          <div
+            className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words shadow-md transition-all hover:shadow-lg ${
+              isOwnMessage
+                ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-br-none'
+                : isBot
+                ? isDark
+                  ? 'bg-gradient-to-br from-purple-900/40 to-pink-900/40 border border-purple-700/50 text-white rounded-bl-none'
+                  : 'bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 text-gray-900 rounded-bl-none'
+                : isDark
+                ? 'bg-slate-700 text-white rounded-bl-none'
+                : 'bg-slate-100 text-gray-900 rounded-bl-none'
+            }`}
+          >
+            {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
 
-          {/* Attachments */}
-          {message.attachments?.map((att, i) => (
-            <AttachmentPreview key={i} attachment={att} isOwn={isOwnMessage} />
-          ))}
-        </div>
+            {/* Attachments */}
+            {message.attachments?.map((att, i) => (
+              <AttachmentPreview key={i} attachment={att} isOwn={isOwnMessage} transcription={message.transcription} />
+            ))}
+          </div>
+        )}
 
         {/* Read receipts — own messages only */}
         {isOwnMessage && (
@@ -100,11 +105,24 @@ export default function MessageItem({ message, isOwnMessage, isGrouped, currentU
           </div>
         )}
       </div>
+
+      {/* Actions bar — shown on hover */}
+      {!isBot && !message.poll && (
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center shrink-0 self-center">
+          <button
+            onClick={() => onStartThread?.(message._id)}
+            className="rounded-full bg-white/60 p-1.5 text-slate-500 hover:bg-white hover:text-slate-900 shadow-sm dark:bg-slate-800/60 dark:hover:bg-slate-700 dark:hover:text-white"
+            title="Reply in Thread"
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
-function AttachmentPreview({ attachment, isOwn }) {
+function AttachmentPreview({ attachment, isOwn, transcription }) {
   const { isDark } = useTheme();
   const isImage = attachment.mimeType?.startsWith('image/');
   const isAudio = attachment.mimeType?.startsWith('audio/');
@@ -131,6 +149,11 @@ function AttachmentPreview({ attachment, isOwn }) {
           Voice message
         </div>
         <audio controls src={attachment.url} className="h-9 w-64 max-w-full" />
+        {transcription && (
+          <p className="mt-2 text-xs opacity-80 italic leading-relaxed border-t border-current/20 pt-2">
+            📝 {transcription}
+          </p>
+        )}
       </div>
     );
   }
