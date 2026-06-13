@@ -1,0 +1,29 @@
+# Node modules
+node_modules/
+server/node_modules/
+client/node_modules/
+
+# Environment files
+.env
+server/.env
+client/.env
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output
+dist/
+build/
+.vite/
+
+# Editor directories
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+
+# Ignore accidental lockfiles in the repo root with no package.json
+package-lock.json
