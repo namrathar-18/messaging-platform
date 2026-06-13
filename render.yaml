@@ -1,0 +1,47 @@
+services:
+  # ── Backend  (Express + Socket.IO) ───────────────────────────────────────────
+  - type: web
+    name: pinglink-backend
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node server.js
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: JWT_SECRET
+        generateValue: true
+      # Set these manually in the Render dashboard after creating the service:
+      - key: MONGO_URI
+        sync: false
+      - key: INTEGRATIONS_API_KEY
+        sync: false
+      - key: CLIENT_URL
+        sync: false   # e.g.  https://pinglink-frontend.onrender.com
+
+  # ── Frontend  (Vite → static site) ───────────────────────────────────────────
+  - type: web
+    name: pinglink-frontend
+    runtime: static
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    plan: free
+    # VITE_ vars are baked in at build time.
+    # Set these in the Render dashboard BEFORE the first build:
+    #   VITE_API_URL    = https://pinglink-backend.onrender.com/api
+    #   VITE_SOCKET_URL = https://pinglink-backend.onrender.com
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+      - key: VITE_SOCKET_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
